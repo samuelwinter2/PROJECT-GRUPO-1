@@ -219,6 +219,8 @@ def PlotAirports (airports):
     plt.legend()
     plt.show()
 
+import webbrowser
+
 def MapAirports(airports):
     F = open("airports.kml", "w")
     F.write("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
@@ -253,3 +255,4 @@ def MapAirports(airports):
     F.write("</Document>\n")
     F.write("</kml>")
     F.close()
+    webbrowser.open("airports.kml")
