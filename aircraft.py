@@ -1,5 +1,5 @@
 
-from I1.PROJECT.airport import *
+from airport import *
 
 class Aircraft:
     def __init__(self, id, origin, time, company):
