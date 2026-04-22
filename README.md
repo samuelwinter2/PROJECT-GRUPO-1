@@ -16,4 +16,4 @@ No hemos cargado las funciones de este archivo aun en la interfaz gráfica pero 
 Se pueden ver las funciones, tres gráficos y el mapa con los vuelos desde LEBL en Google Earth. 
 
 Por último, como no hemos añadido todo esto en la interfaz, no hemos podido añadir las sugerencias de la correción de la V1.
-Video V2: 
+Video V2: https://drive.google.com/file/d/1tWHpkgqOpd7w8tSoHu3W_Pnz5pNpnIIz/view?usp=sharing
