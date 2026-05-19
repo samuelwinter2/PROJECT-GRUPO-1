@@ -1,7 +1,8 @@
-
 from airport import *
+ax = None
 
 class Aircraft:
+    # Aircraft: id(str), origin(str), time(str), company(str); representa un vuelo de llegada.
     def __init__(self, id, origin, time, company):
         self.id = id
         self.company = company
@@ -9,33 +10,44 @@ class Aircraft:
         self.time = time
 
 
+# LoadArrivals: lee vuelos desde archivo; parámetros (filename); devuelve lista o [] si File error.
 def LoadArrivals(filename):
     aircrafts = []
 
-    F = open(filename, 'r')
-    lineas = F.readlines()
-    F.close()
-    i = 1  # para no contar los títulos
-    while i < len(lineas):
-        linea = lineas[i]
+    try:
+        F = open(filename, 'r')
+    except:
+        print("File error")
+        return []
+
+    i = 1
+    linea = F.readline()   # primera línea (títulos)
+
+    linea = F.readline()   # primera línea real
+    while linea != "":
         partes = linea.split(" ")
+
         if len(partes) == 4:
             aircraft = partes[0]
             origin = partes[1]
             arrival = partes[2]
             airline = partes[3]
-            airplane = Aircraft(aircraft, origin, arrival, airline)
-            aircrafts.append(airplane)
+
             hora = int(arrival.split(":")[0])
             min = int(arrival.split(":")[1])
+
             if hora >= 0 and hora < 24 and min >= 0 and min < 60:
                 airplane = Aircraft(aircraft, origin, arrival, airline)
                 aircrafts.append(airplane)
+
+        linea = F.readline()
         i = i + 1
 
+    F.close()
     return aircrafts
 
 
+# PlotArrivals: muestra número de vuelos por hora; parámetros(aircrafts); error si lista vacía.
 def PlotArrivals(aircrafts):
     if len(aircrafts) == 0:
         print("Error: la lista está vacía")
@@ -50,17 +62,18 @@ def PlotArrivals(aircrafts):
         i = i + 1
 
     day_hour = range(24)
-    plt.bar(day_hour, flights_hour)
-    plt.title("Número de aviones que aterrizan por hora")
-    plt.xlabel("Hora del día")
-    plt.ylabel("Número de vuelos")
-    plt.show()
+    ax.bar(day_hour, flights_hour)
+    ax.set_title("Número de aviones que aterrizan por hora")
+    ax.set_xlabel("Hora del día")
+    ax.set_ylabel("Número de vuelos")
 
 
+# SaveFlights: guarda vuelos en archivo; parámetros(aircrafts, filename); error si lista vacía.
 def SaveFlights(aircrafts, filename):
     if len(aircrafts) == 0:
         print("Error: la lista está vacía")
         return
+
     try:
         f = open(filename, 'w')
         f.write("AIRCRAFT ORIGIN ARRIVAL AIRLINE\n")
@@ -85,10 +98,12 @@ def SaveFlights(aircrafts, filename):
             i = i + 1
 
         f.close()
-    except IOError:
+    except:
+        print("File error")
         return
 
 
+# PlotAirlines: muestra números de vuelos por aerolínea; parámetros(aircrafts); error si lista vacía.
 def PlotAirlines(aircrafts):
     if len(aircrafts) == 0:
         print("Error: la lista está vacía")
@@ -115,13 +130,14 @@ def PlotAirlines(aircrafts):
 
         i = i + 1
 
-    plt.bar(airlines, num_flights)
-    plt.title("Número de vuelos por aerolínea")
-    plt.xlabel("Aerolínea")
-    plt.ylabel("Número de vuelos")
-    plt.show()
+    ax.bar(airlines, num_flights)
+    ax.set_title("Número de vuelos por aerolínea")
+    ax.set_xlabel("Aerolínea")
+    ax.set_ylabel("Número de vuelos")
+    ax.tick_params(axis='x', rotation=90, labelsize=6)
 
 
+# PlotFlightsType: muestra vuelos Schengen vs No-Schengen; parámetros(aircrafts); error si vacía.
 def PlotFlightsType(aircrafts):
     if len(aircrafts) == 0:
         print("Error: la lista está vacía")
@@ -143,18 +159,19 @@ def PlotFlightsType(aircrafts):
     y1 = [schengen]
     y2 = [no_schengen]
 
-    plt.bar(x, y1, color='blue', label='Schengen')
-    plt.bar(x, y2, bottom=y1, color='red', label='No Schengen')
+    ax.bar(x, y1, color='blue', label='Schengen')
+    ax.bar(x, y2, bottom=y1, color='red', label='No Schengen')
 
-    plt.ylabel("Número de vuelos")
-    plt.title("Vuelos por tipo de origen (Schengen / No Schengen)")
-    plt.legend()
-    plt.show()
+    ax.set_ylabel("Número de vuelos")
+    ax.set_title("Vuelos por tipo de origen (Schengen / No Schengen)")
+    ax.legend()
 
 
 import webbrowser
 
+# MapFlights: dibuja rutas en Google Earth; parámetros(aircrafts); usa colores según Schengen.
 def MapFlights(aircrafts):
+    airports = LoadAirports("Airports.txt")
     F = open("flights.kml", "w")
     F.write("<kml xmlns='http://www.opengis.net/kml/2.2'>\n")
     F.write("<Document>\n")
@@ -168,6 +185,11 @@ def MapFlights(aircrafts):
 
     i = 0
     while i < len(aircrafts):
+        airports = LoadAirports("Airports.txt")
+        k = 0
+        while k < len(airports):
+            SetSchengen(airports[k])
+            k = k + 1
 
         origin_code = aircrafts[i].origin
         origin_airport = False
@@ -208,12 +230,14 @@ def MapFlights(aircrafts):
     F.write("</kml>\n")
     F.close()
 
-
     webbrowser.open("flights.kml")
 
 
+# LongDistanceArrivals: devuelve vuelos con origen a >2000 km; parámetros(aircrafts).
 def LongDistanceArrivals(aircrafts):
     from math import radians, sin, cos, sqrt, atan2
+
+    airports = LoadAirports("Airports.txt")
 
     if len(aircrafts) == 0:
         return []
@@ -266,24 +290,24 @@ def LongDistanceArrivals(aircrafts):
     return result
 
 
-# test section
-
+# TEST
 if __name__ == "__main__":
     airports = LoadAirports("Airports.txt")
     i = 0
     while i < len(airports):
         SetSchengen(airports[i])
         i += 1
+
     aircrafts = LoadArrivals("arrivals.txt")
     PlotArrivals(aircrafts)
     PlotAirlines(aircrafts)
     PlotFlightsType(aircrafts)
     SaveFlights(aircrafts, "arrivals_saved.txt")
+
     long = LongDistanceArrivals(aircrafts)
     i = 0
     while i < len(long):
         print(long[i].id, long[i].origin)
         i += 1
+
     MapFlights(aircrafts)
-
-
