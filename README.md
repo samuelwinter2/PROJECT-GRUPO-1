@@ -24,6 +24,6 @@ Ejecutar **interface.py** para cargar el programa.
 
 Cargar los archivos de texto **Airports.txt**, **Arrivals.txt** y **Terminals.txt**, está útlima usando el botón **LOAD LEBL STRUCTURE**.
 
-Una vez cargados todos los datos, ya se pueden usar las funciones de la versión 3, incluyendo la gestión completa de puertas y terminales. Para asignar una llegada a una puerta simplemente hay que selccionar en FLIGHTS la llegada que deseemos asignar. Para poder ver que puertas estan disponibles y cuales no hay que darle al botón **SHOW GATE OCCUPANCY**, que nos mostrará un esquema visual del aeropuerto. Primeramente mostrará la T1, pero podems ir alternado entre T1 y T2 dando click de nuevo al botón **SHOW GATE OCCUPANCY**.  
+Una vez cargados todos los datos, ya se pueden usar las funciones de la versión 3, incluyendo la gestión completa de puertas y terminales. Para asignar una llegada a una puerta simplemente hay que selccionar en FLIGHTS la llegada que deseemos asignar y darle al botón **ASSIGN GATE**. Para poder ver que puertas estan disponibles y cuales no hay que darle al botón **SHOW GATE OCCUPANCY**, que nos mostrará un esquema visual del aeropuerto. Primeramente mostrará la T1, pero podems ir alternado entre T1 y T2 dando click de nuevo al botón **SHOW GATE OCCUPANCY**.  
 
 Video V3: 
