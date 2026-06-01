@@ -98,7 +98,13 @@ def LoadAirportStructure (filename):
             parts = line.split()
 
             area_name = parts[1]
-            area_type = parts[2]
+            area_type = parts[2].strip()
+
+            if area_type == "Schengen":
+                area_type = "schengen"
+            elif area_type == "non-Schengen":
+                area_type = "non-schengen"
+
             init_gate = int(parts[4])
             end_gate = int(parts[6])
 
@@ -177,7 +183,7 @@ def AssignGate(bcn, aircraft):
 
     t_name = SearchTerminal(bcn, aircraft.company)
     if t_name == "":
-        print("ERROR: Airline not found in any terminal")
+        print("ERROR: Airline", aircraft.company," not found in any terminal")
         return -1
 
     es_Schengen = IsSchengenAirport(aircraft.origin)
@@ -208,31 +214,252 @@ def AssignGate(bcn, aircraft):
                             gate.aircraft_id = aircraft.id
                             print("Avión", aircraft.id, "asignado a la puerta", gate.name)
                             return gate.name
+
                         k = k + 1
-                    print("ERROR: No free gates in terminal", t_name, "for type", tipo)
-                    return -1
+
                 j = j + 1
+
+            print("ERROR: No free gates in terminal", t_name, "for type", tipo)
+            return -1
+
         i = i + 1
+
     print("ERROR: Terminal not found")
     return -1
 
+# AssignNightGates: asigna puertas a aviones que solo tienen salida; parámetros(bcn, aircrafts); devuelve -1 si error.
+def AssignNightGates(bcn, aircrafts):
+    if len(aircrafts) == 0:
+        print("Error: empty list")
+        return -1
+
+    i = 0
+    while i < len(aircrafts):
+        a = aircrafts[i]
+
+        if a.origin == "" and a.time == "":
+            AssignGate(bcn, a)
+        else:
+            print("Skipping aircraft", a.id, "(not night aircraft)")
+
+        i = i + 1
+
+# FreeGate: libera la puerta donde está un avión; parámetros(bcn, id); devuelve nombre de gate o -1 si no se encuentra.
+def FreeGate(bcn, id):
+    i = 0
+    while i < len(bcn.terminals):
+        terminal = bcn.terminals[i]
+
+        j = 0
+        while j < len(terminal.boarding_areas):
+            area = terminal.boarding_areas[j]
+
+            k = 0
+            while k < len(area.gates):
+                gate = area.gates[k]
+
+                if gate.aircraft_id == id:
+                    gate.occupied = False
+                    gate.aircraft_id = ""
+                    return gate.name
+
+                k = k + 1
+            j = j + 1
+        i = i + 1
+
+    print("ERROR: aircraft not found")
+    return -1
+
+# AssignGatesAtTime: libera puertas de aviones ya salidos y asigna a los que aterrizan en esa hora; parámetros(bcn, aircrafts, time); devuelve número no asignados.
+def AssignGatesAtTime(bcn, aircrafts, time):
+
+    if len(aircrafts) == 0:
+        return -1
+
+    hora_inicio = int(time.split(":")[0])
+    hora_fin = hora_inicio + 1
+
+    # Liberar puertas de aviones ya despegados
+    i = 0
+    while i < len(aircrafts):
+
+        aircraft = aircrafts[i]
+
+        if aircraft.departure != "":
+
+            dep_h = int(aircraft.departure.split(":")[0])
+
+            # Si ya ha salido antes de esta hora
+            if dep_h < hora_inicio:
+                FreeGate(bcn, aircraft.id)
+
+        i = i + 1
+
+    # Asignar puertas a llegadas del periodo
+    no_asignados = 0
+
+    i = 0
+    while i < len(aircrafts):
+
+        aircraft = aircrafts[i]
+
+        # Solo vuelos con llegada
+        if aircraft.time != "":
+
+            arr_h = int(aircraft.time.split(":")[0])
+
+            # Si aterriza dentro de esta franja
+            if arr_h >= hora_inicio and arr_h < hora_fin:
+
+                gate = AssignGate(bcn, aircraft)
+
+                if gate == -1:
+                    no_asignados += 1
+
+        i = i + 1
+
+    return no_asignados
+
+# PlotDayOccupancy, muestra ocupación diaria por terminal
+def PlotDayOccupancy(bcn, aircrafts):
+
+    if len(aircrafts) == 0:
+        print("Error: empty aircraft list")
+        return
+
+    terminals = []
+    i = 0
+    while i < len(bcn.terminals):
+        terminals.append(bcn.terminals[i].name)
+        i += 1
+
+    ocupacion_terminales = []
+    i = 0
+    while i < len(terminals):
+        ocupacion_terminales.append([])
+        i += 1
+    no_asignados_hora = []
+    horas = []
+
+    h = 0
+    while h < 24:
+
+        horas.append(h)
+
+        temp = BarcelonaAP(bcn.code)
+
+        t = 0
+        while t < len(bcn.terminals):
+            term_real = bcn.terminals[t]
+            term = Terminal(term_real.name)
+
+            term.airlines = []
+            a = 0
+            while a < len(term_real.airlines):
+                term.airlines.append(term_real.airlines[a])
+                a += 1
+
+            a = 0
+            while a < len(term_real.boarding_areas):
+                area_real = term_real.boarding_areas[a]
+                area = BoardingArea(area_real.name, area_real.type)
+                g = 0
+                while g < len(area_real.gates):
+                    gate_real = area_real.gates[g]
+                    area.gates.append(Gate(gate_real.name))
+                    g += 1
+
+                term.boarding_areas.append(area)
+                a += 1
+
+            temp.terminals.append(term)
+            t += 1
+
+        night_list = NightAircraft(aircrafts)
+        if night_list != -1:
+            AssignNightGates(temp, night_list)
+
+        sim = 0
+        rejected_this_hour = 0
+
+        while sim <= h:
+            rejected = AssignGatesAtTime(temp, aircrafts, f"{sim:02d}:00")
+
+            if sim == h:
+                rejected_this_hour = rejected
+
+            sim = sim + 1
+
+        no_asignados_hora.append(rejected_this_hour)
+
+        t = 0
+        while t < len(temp.terminals):
+            ocupadas = 0
+            a = 0
+            while a < len(temp.terminals[t].boarding_areas):
+                g = 0
+                while g < len(temp.terminals[t].boarding_areas[a].gates):
+                    if temp.terminals[t].boarding_areas[a].gates[g].occupied:
+                        ocupadas += 1
+                    g += 1
+                a += 1
+            ocupacion_terminales[t].append(ocupadas)
+            t += 1
+
+        h += 1
+
+    i = 0
+    while i < len(terminals):
+        ax.plot(horas, ocupacion_terminales[i], label=terminals[i])
+        i += 1
+
+    ax.plot(horas, no_asignados_hora, label="Not Assigned")
+
+    ax.set_title("Gate Occupancy During the Day")
+    ax.set_xlabel("Hour")
+    ax.set_ylabel("Assigned Gates")
+    ax.set_xticks(range(24))
+    ax.legend()
+
+
 # TEST
 if __name__ == "__main__":
+    print("LOADAIRPORTSTRUCTURE")
     bcn = LoadAirportStructure("Terminals.txt")
 
+    print("ASSIGNGATE")
     aircraft = Aircraft("VY1234","LEMD","12:30","VLG")
-
     gate = AssignGate(bcn, aircraft)
     print("Gate assigned:", gate)
 
+    print("GATEOCCUPANCY")
     gates = GateOccupancy(bcn)
     for g in gates[:20]:
         print(g)
 
+    print("ISAIRLINEINTERMINAL")
     t = bcn.terminals[0]
     if t.airlines:
-        print("Airline", t.airlines[0], "in terminal",t.name,":", IsAirlineInTerminal(t, t.airlines[0]))
+        print("Airline", t.airlines[0], "in terminal", t.name, ":", IsAirlineInTerminal(t, t.airlines[0]))
 
+    print("SEARCHTERMINAL")
     if bcn.terminals[0].airlines:
         airline = t.airlines[0]
         print("SearchTerminal for", airline, ":", SearchTerminal(bcn, airline))
+
+    print("FREEGATE")
+    f = FreeGate(bcn, aircraft.id)
+    print("Freed gate:", f)
+
+    print("ASSIGNNIGHTGATES")
+    night = [Aircraft("NIGHT1", "", "", "VLG")]
+    AssignNightGates(bcn, night)
+
+    print("ASSIGNGATESATTIME")
+    r = AssignGatesAtTime(bcn, [aircraft], "12:00")
+    print("Not assigned:", r)
+
+    print("PLOTDAYOCCUPANCY")
+    fig, ax = plt.subplots()
+    PlotDayOccupancy(bcn, [aircraft])
+    plt.show()

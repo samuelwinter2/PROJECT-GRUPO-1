@@ -1,14 +1,17 @@
 from airport import *
-ax = None
+import webbrowser
+import matplotlib.pyplot as plt
+
 
 class Aircraft:
-    # Aircraft: id(str), origin(str), time(str), company(str); representa un vuelo de llegada.
-    def __init__(self, id, origin, time, company):
+    # id(str), origin(str), arrival (str), company(str), destination(str), departure(str)
+    def __init__(self, id, origin="", arrival="", company="", destination="", departure=""):
         self.id = id
-        self.company = company
         self.origin = origin
-        self.time = time
-
+        self.time = arrival
+        self.company = company
+        self.destination = destination
+        self.departure = departure
 
 # LoadArrivals: lee vuelos desde archivo; parámetros (filename); devuelve lista o [] si File error.
 def LoadArrivals(filename):
@@ -21,9 +24,10 @@ def LoadArrivals(filename):
         return []
 
     i = 1
-    linea = F.readline()   # primera línea (títulos)
 
+    linea = F.readline()   # primera línea (títulos)
     linea = F.readline()   # primera línea real
+
     while linea != "":
         partes = linea.split(" ")
 
@@ -46,27 +50,134 @@ def LoadArrivals(filename):
     F.close()
     return aircrafts
 
+# LoadDepartures: lee vuelos de salida desde archivo; parámetros (filename); devuelve lista o [] si error.
+def LoadDepartures(filename):
+    aircrafts = []
+
+    try:
+        F = open(filename, "r")
+    except:
+        print("File error")
+        return []
+
+    linea = F.readline()   # títulos
+    linea = F.readline()   # primera línea real
+
+    while linea != "":
+        partes = linea.split()
+
+        if len(partes) == 4:
+            aircraft = partes[0]
+            destination = partes[1]
+            departure = partes[2]
+            airline = partes[3]
+
+            hora = int(departure.split(":")[0])
+            min = int(departure.split(":")[1])
+
+            if hora >= 0 and hora < 24 and min >= 0 and min < 60:
+                airplane = Aircraft(aircraft, "", "", airline, destination, departure)
+                aircrafts.append(airplane)
+
+        linea = F.readline()
+
+    F.close()
+    return aircrafts
+
+# MergeMovements: une llegadas y salidas con mismo id y horas compatibles; parámetros(arrivals, departures); devuelve lista o -1 si error.
+def MergeMovements(arrivals, departures):
+    if len(arrivals) == 0 or len(departures) == 0:
+        print("Error: empty list")
+        return -1
+
+
+    arrivals_reales = []
+    m = 0
+    while m < len(arrivals):
+        if arrivals[m].time != "":
+            arrivals_reales.append(arrivals[m])
+        m = m + 1
+
+    result = []
+    used = []
+
+    i = 0
+    while i < len(arrivals_reales):
+        arr = arrivals_reales[i]
+
+        j = 0
+        found = False
+
+        while j < len(departures):
+            dep = departures[j]
+
+            if arr.id == dep.id:
+
+                arr_h = int(arr.time.split(":")[0])
+                arr_m = int(arr.time.split(":")[1])
+                dep_h = int(dep.departure.split(":")[0])
+                dep_m = int(dep.departure.split(":")[1])
+
+                if (arr_h < dep_h) or (arr_h == dep_h and arr_m < dep_m):
+                    merged = Aircraft(arr.id, arr.origin, arr.time, arr.company, dep.destination, dep.departure)
+                    result.append(merged)
+                    used.append(j)
+                    found = True
+                    j = len(departures)
+
+            j = j + 1
+
+        if found == False:
+            result.append(arr)
+
+        i = i + 1
+
+    k = 0
+    while k < len(departures):
+        if k not in used:
+            dep = departures[k]
+            night = Aircraft(dep.id, "", "", dep.company, dep.destination, dep.departure)
+            result.append(night)
+        k = k + 1
+
+    return result
+
+# NightAircraft: devuelve los aviones sin llegada (origin="" y arrival=""); si la lista está vacía devuelve -1.
+def NightAircraft(aircrafts):
+    if len(aircrafts) == 0:
+        return -1
+
+    night_list = []
+    i = 0
+    while i < len(aircrafts):
+        avion = aircrafts[i]
+
+        if avion.origin == "" and avion.time == "":
+            night_list.append(avion)
+
+        i = i + 1
+
+    return night_list
 
 # PlotArrivals: muestra número de vuelos por hora; parámetros(aircrafts); error si lista vacía.
 def PlotArrivals(aircrafts):
-    if len(aircrafts) == 0:
-        print("Error: la lista está vacía")
-        return
-
-    flights_hour = [0] * 24
+    flights_hour = [0]*24
     i = 0
+
     while i < len(aircrafts):
-        hour_text = aircrafts[i].time
-        hour = int(hour_text.split(":")[0])
-        flights_hour[hour] = flights_hour[hour] + 1
+        time_text = aircrafts[i].time
+
+        if time_text != "":
+            hour_text = time_text[0:2]
+            hour = int(hour_text)
+            if hour >= 0 and hour < 24:
+                    flights_hour[hour] = flights_hour[hour] + 1
         i = i + 1
 
-    day_hour = range(24)
-    ax.bar(day_hour, flights_hour)
+    ax.bar(range(24), flights_hour)
     ax.set_title("Número de aviones que aterrizan por hora")
     ax.set_xlabel("Hora del día")
     ax.set_ylabel("Número de vuelos")
-
 
 # SaveFlights: guarda vuelos en archivo; parámetros(aircrafts, filename); error si lista vacía.
 def SaveFlights(aircrafts, filename):
@@ -93,7 +204,7 @@ def SaveFlights(aircrafts, filename):
             if aerolinea == "":
                 aerolinea = "-"
 
-            linea = avion + " " + origen + " " + hora + " " + aerolinea + "\n"
+            linea = avion + " " + origen + " " + hora + " " + aerolinea
             f.write(linea)
             i = i + 1
 
@@ -165,9 +276,6 @@ def PlotFlightsType(aircrafts):
     ax.set_ylabel("Número de vuelos")
     ax.set_title("Vuelos por tipo de origen (Schengen / No Schengen)")
     ax.legend()
-
-
-import webbrowser
 
 # MapFlights: dibuja rutas en Google Earth; parámetros(aircrafts); usa colores según Schengen.
 def MapFlights(aircrafts):
@@ -290,7 +398,6 @@ def LongDistanceArrivals(aircrafts):
     return result
 
 
-# TEST
 if __name__ == "__main__":
     airports = LoadAirports("Airports.txt")
     i = 0
@@ -298,16 +405,30 @@ if __name__ == "__main__":
         SetSchengen(airports[i])
         i += 1
 
-    aircrafts = LoadArrivals("arrivals.txt")
-    PlotArrivals(aircrafts)
-    PlotAirlines(aircrafts)
-    PlotFlightsType(aircrafts)
-    SaveFlights(aircrafts, "arrivals_saved.txt")
+    arrivals = LoadArrivals("arrivals.txt")
+    departures = LoadDepartures("departures.txt")
 
-    long = LongDistanceArrivals(aircrafts)
-    i = 0
-    while i < len(long):
-        print(long[i].id, long[i].origin)
-        i += 1
+    aircrafts = MergeMovements(arrivals, departures)
+    print("Movements merged:", len(aircrafts))
 
-    MapFlights(aircrafts)
+    night = NightAircraft(aircrafts)
+    print("Night flights:", len(night))
+
+    SaveFlights(arrivals, "arrivals_saved.txt")
+
+    long = LongDistanceArrivals(arrivals)
+    print("Long distance flights:", len(long))
+
+    fig, ax = plt.subplots()
+    PlotArrivals(arrivals)
+
+    fig, ax = plt.subplots()
+    PlotAirlines(arrivals)
+
+    fig, ax = plt.subplots()
+    PlotFlightsType(arrivals)
+
+    plt.show()
+
+    MapFlights(arrivals)
+

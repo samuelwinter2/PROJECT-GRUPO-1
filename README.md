@@ -22,8 +22,25 @@ Video V2: https://drive.google.com/file/d/1tWHpkgqOpd7w8tSoHu3W_Pnz5pNpnIIz/view
 
 Ejecutar **interface.py** para cargar el programa.
 
-Cargar los archivos de texto **Airports.txt**, **Arrivals.txt** y **Terminals.txt**, está útlima usando el botón **LOAD LEBL STRUCTURE**.
+Cargar los archivos de texto **Airports.txt**, **Arrivals.txt** y **Terminals.txt**, este último usando el botón **LOAD LEBL STRUCTURE**.
 
 Una vez cargados todos los datos, ya se pueden usar las funciones de la versión 3, incluyendo la gestión completa de puertas y terminales. Para asignar una llegada a una puerta simplemente hay que selccionar en FLIGHTS la llegada que deseemos asignar y darle al botón **ASSIGN GATE**. Para poder ver que puertas estan disponibles y cuales no hay que darle al botón **SHOW GATE OCCUPANCY**, que nos mostrará un esquema visual del aeropuerto. Primeramente mostrará la T1, pero podems ir alternado entre T1 y T2 dando click de nuevo al botón **SHOW GATE OCCUPANCY**.  
 
-Video V3: 
+Video V3:  https://drive.google.com/file/d/1B_1VXsN5BUZe9U2kINiBd4dx-wAhR02K/view?usp=sharing
+
+# Versión 4 del Proyecto – Grupo 1
+
+Ejecutar **interface.py** para cargar el programa.
+
+Cargar los archivos de texto **Airports.txt**, **Arrivals.txt**, **Terminals.txt** y **Departures.txt** este último usando el botón **LOAD DEPARTURES**.
+Y darle al botón **MERGE MOVEMENTS**.
+
+Una vez cargados todos los datos, ya se pueden usar las funciones de la versión 4. 
+Para asignar o borrar un avión manualmente a una puerta simplemente hay que seleccionar en **MERGED MOVEMENTS** y darle al botón **ASSIGN GATE** o **UNASSIGN GATE**. 
+Para asignar o borrar todos los aviones automáticamente simplemente darle al botón **ASSIGN ALL** o **UNASSIGN ALL**.
+Para asignar los aviones nocturnos simplemente darle al botón **NIGHT AIRCRAFTS**.
+Para asignar un avión a una puerta específica, hay que seleccionar el avión en **MERGED MOVEMENTS**, escribir la puerta en **GATE NAME:** y darle al botón **ASSIGN GATE TEXT**  
+Para poder asignar y ver el estado de cada hora del aeropuerto hay que escribir la hora en **HOUR(00-23):** y darle al botón **ASSIGN AND SHOW GATE OCCUPANCY AT HOUR**  
+Darle a **PLOT DAY OCCUPANCY** para ver la gráfica del estado del aeropuerto a lo largo del día.
+
+Video V4:  

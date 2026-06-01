@@ -1,5 +1,6 @@
 import webbrowser
-ax = None
+import matplotlib.pyplot as plt
+
 
 # Airport: ICAO(str), latitude(float), longitude(float), Schengen(TRUE/FALSE)
 class Airport:
@@ -81,6 +82,7 @@ def LoadAirports(filename):
             i = i + 1
 
     except:
+        print("Error: unable to open airports file.")
         return []
 
     return airports
@@ -100,7 +102,7 @@ def SaveSchengenAirports(airports, filename):
         i = i + 1
 
     if cuenta == 0:
-        print("No hay aeropuertos Schengen para guardar.")
+        print("No Schengen airports to save.")
 
     try:
         F = open(filename, 'w')
@@ -178,6 +180,7 @@ def SaveSchengenAirports(airports, filename):
         F.close()
 
     except:
+        print("Error: unable to save Schengen airports file.")
         return -1
 
 # AddAirport: añade aeropuerto si no está repetido; parámetros(airports, airport).
@@ -190,7 +193,9 @@ def AddAirport(airports, airport):
         else:
             i = i + 1
 
-    if not encontrado:
+    if encontrado:
+        print("Error: airport already exists.")
+    else:
         airports.append(airport)
 
 # RemoveAirport: elimina aeropuerto por ICAO; parámetros(airports, code); devuelve -1 si no existe.
@@ -211,10 +216,15 @@ def RemoveAirport(airports, code):
             i = i + 1
         airports[:] = airports[:n]
     else:
+        print("Error: airport not found.")
         return -1
 
 # PlotAirports: muestra barras Schengen vs No Schengen; parámetros(airports).
 def PlotAirports(airports):
+    if len(airports) == 0:
+        print("Error: empty airport list.")
+        return
+
     schengen_count = 0
     no_schengen = 0
 
@@ -239,6 +249,10 @@ def PlotAirports(airports):
 
 # MapAirports: genera archivo KML y abre Google Earth; parámetros(airports).
 def MapAirports(airports):
+    if len(airports) == 0:
+        print("Error: empty airport list.")
+        return
+
     F = open("airports.kml", "w")
     F.write("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
     F.write("<Document>\n")
@@ -294,5 +308,8 @@ if __name__ == "__main__":
     while i < len(airports):
         PrintAirport (airports[i])
         i = i + 1
-    PlotAirports (airports)
+
     MapAirports(airports)
+    fig, ax = plt.subplots()
+    PlotAirports(airports)
+    plt.show()
