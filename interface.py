@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox, filedialog
 import airport
 import aircraft
 from LEBL import *
@@ -11,7 +11,8 @@ import tkintermapview
 
 airports = []
 aircrafts = []
-
+departures = []
+bcn = -1
 
 # Actualiza la listbox de aeropuertos con los datos de airports
 def refresh_list():
@@ -46,36 +47,49 @@ def refresh_airlines_list():
 
 
 def load_airports():
-    from tkinter import filedialog
     global airports
     filename = filedialog.askopenfilename()
-    if filename:
-        airports = LoadAirports(filename)
+    if not filename:
+        return
+    try:
+        airports = airport.LoadAirports(filename)
+        if len(airports) == 0:
+            messagebox.showwarning("Warning", "The file is empty or contains no valid airports.")
+            print("Warning: empty or invalid file.")
         refresh_list()
-
+    except:
+        messagebox.showwarning("Warning", "Could not load the airports file.")
+        print("Warning: error loading airports.")
 
 def add_airport():
     try:
-        code = entry_code.get()
+        code = entry_code.get().strip()
         lat = float(entry_lat.get())
         lon = float(entry_lon.get())
-        a = Airport(code, lat, lon)
-        SetSchengen(a)
-        AddAirport(airports, a)
+        a = airport.Airport(code, lat, lon)
+        airport.SetSchengen(a)
+        airport.AddAirport(airports, a)
         refresh_list()
     except:
-        print("Error: enter all data")
-
+        messagebox.showwarning("Warning", "Invalid data. Check ICAO, latitude and longitude.")
+        print("Warning: invalid data when adding airport.")
 
 def remove_airport():
     sel = listbox_airports.curselection()  # Línea seleccionada en la listbox
-    if sel:
-        i = sel[0]                          # Primera línea seleccionada
-        RemoveAirport(airports, airports[i].ICAO)
-        refresh_list()
+    if not sel:
+        messagebox.showwarning("Warning", "Select an airport to remove.")
+        print("Warning: no airport selected.")
+        return
+    i = sel[0]                          # Primera línea seleccionada
+    RemoveAirport(airports, airports[i].ICAO)
+    refresh_list()
 
 
 def set_schengen():
+    if len(airports) == 0:
+        messagebox.showwarning("Warning", "No airports loaded.")
+        print("Warning: airport list is empty.")
+        return
     i = 0
     while i < len(airports):
         SetSchengen(airports[i])
@@ -84,13 +98,26 @@ def set_schengen():
 
 
 def save_schengen():
-    from tkinter import filedialog
+    if len(airports) == 0:
+        messagebox.showwarning("Warning", "No airports loaded.")
+        print("Warning: airport list is empty.")
+        return
     filename = filedialog.asksaveasfilename()
-    if filename:
-        SaveSchengenAirports(airports, filename)
+    if not filename:
+        return
+    try:
+        airport.SaveSchengenAirports(airports, filename)
+    except:
+        messagebox.showwarning("Warning", "Could not save the file.")
+        print("Warning: error saving file.")
 
 
 def plot_airports():
+    if len(airports) == 0:
+        messagebox.showwarning("Warning", "No airports loaded.")
+        print("Warning: airport list is empty.")
+        return
+
     notebook.select(1)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -99,6 +126,11 @@ def plot_airports():
     canvas.draw()
 
 def map_airports():
+    if len(airports) == 0:
+        messagebox.showwarning("Warning", "No airports loaded.")
+        print("Warning: airport list is empty.")
+        return
+
     notebook.select(0)
     map_widget.delete_all_marker()
     map_widget.delete_all_path()
@@ -114,17 +146,24 @@ def map_airports():
         map_widget.set_zoom(4)
 
 def map_flights():
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "No arrivals loaded.")
+        print("Warning: flight list is empty.")
+        return
+    if len(airports) == 0:
+        messagebox.showwarning("Warning", "No airports loaded.")
+        print("Warning: airport list is empty.")
+        return
     notebook.select(0)
     map_widget.delete_all_marker()
     map_widget.delete_all_path()
     i = 0
     while i < len(aircrafts):
         flight = aircrafts[i]
-        color_vuelo = "gray"
         j = 0
         encontrado = False
-        lat = None
-        lon = None
+        lat = 0
+        lon = 0
         while j < len(airports) and not encontrado:
             if airports[j].ICAO == flight.origin:
                 encontrado = True
@@ -142,6 +181,14 @@ def map_flights():
     map_widget.set_zoom(4)
 
 def map_long_flights():
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "No arrivals loaded.")
+        print("Warning: flight list is empty.")
+        return
+    if len(airports) == 0:
+        messagebox.showwarning("Warning", "No airports loaded.")
+        print("Warning: airport list is empty.")
+        return
     notebook.select(0)
     map_widget.delete_all_marker()
     map_widget.delete_all_path()
@@ -149,11 +196,10 @@ def map_long_flights():
     i = 0
     while i < len(long_flights):
         flight = long_flights[i]
-        color_vuelo = "gray"
         j = 0
         encontrado = False
-        lat = None
-        lon = None
+        lat = 0
+        lon = 0
         while j < len(airports) and not encontrado:
             if airports[j].ICAO == flight.origin:
                 encontrado = True
@@ -171,31 +217,52 @@ def map_long_flights():
     map_widget.set_zoom(3)
 
 def load_arrivals():
-    from tkinter import filedialog
     global aircrafts
     filename = filedialog.askopenfilename()
-    if filename:
-        aircrafts = LoadArrivals(filename)
+    if not filename:
+        return
+    try:
+        aircrafts = aircraft.LoadArrivals(filename)
+    except:
+        messagebox.showwarning("Warning", "Could not load the arrivals file.")
+        print("Warning: error loading arrivals.")
+        return
 
-        listbox_arrivals.delete(0, END)  # Borra la listbox de vuelos
+    listbox_arrivals.delete(0, END) # Borra la listbox de vuelos
 
-        i = 0
-        while i < len(aircrafts):# Inserta cada vuelo en la listbox
-            a = aircrafts[i]
-            listbox_arrivals.insert(END, f"{a.id} | {a.origin} → {a.time} | {a.company}")
-            i = i + 1
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "The arrivals file is empty.")
+        print("Warning: empty arrivals file.")
+        return
 
-        refresh_airlines_list() # Actualiza aerolíneas
+    i = 0
+    while i < len(aircrafts):  # Inserta cada vuelo en la listbox
+        a = aircrafts[i]
+        listbox_arrivals.insert(END, f"{a.id} | {a.origin} → {a.time} | {a.company}")
+        i = i + 1
 
+    refresh_airlines_list()  # Actualiza aerolíneas
 
 def save_flights():
-    from tkinter import filedialog
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "No arrivals loaded.")
+        print("Warning: flight list is empty.")
+        return
     filename = filedialog.asksaveasfilename()
-    if filename:
-        SaveFlights(aircrafts, filename)
+    if not filename:
+        return
 
+    try:
+        aircraft.SaveFlights(aircrafts, filename)
+    except:
+        messagebox.showwarning("Warning", "Could not save the flights file.")
+        print("Warning: error saving flights.")
 
 def plot_arrivals():
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "No arrivals loaded.")
+        print("Warning: flight list is empty.")
+        return
     notebook.select(1)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -203,9 +270,11 @@ def plot_arrivals():
     PlotArrivals(aircrafts)
     canvas.draw()
 
-
-# Plot de aerolíneas con filtro según selección en listbox_airlines
 def plot_airlines():
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "No arrivals loaded.")
+        print("Warning: flight list is empty.")
+        return
     notebook.select(1)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -236,9 +305,11 @@ def plot_airlines():
         PlotAirlines(filtro)
     canvas.draw()
 
-
-
 def plot_flight_types():
+    if len(aircrafts) == 0:
+        messagebox.showwarning("Warning", "No arrivals loaded.")
+        print("Warning: flight list is empty.")
+        return
     notebook.select(1)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -248,35 +319,48 @@ def plot_flight_types():
 
 def load_LEBL():
     global bcn
-    from tkinter import filedialog
 
     filename = filedialog.askopenfilename(title="Select LEBL structure file")
     if not filename:
         return
+    try:
+        bcn = LoadAirportStructure(filename)
+    except:
+        messagebox.showwarning("Warning", "Could not load LEBL structure.")
+        print("Warning: error loading LEBL.")
+        return
 
-    bcn = LoadAirportStructure(filename)
     if bcn == -1:
-        print("Error loading airport structure.")
+        messagebox.showwarning("Warning", "The LEBL file is empty or invalid.")
+        print("Warning: invalid LEBL file.")
     else:
         print("LEBL structure loaded:", bcn.code, "Terminals:", len(bcn.terminals))
 
-
-# Asigna una puerta al vuelo seleccionado en la listbox de llegadas
 def assign_gate():
     global bcn
 
-    sel = listbox_merged.curselection()  # Línea seleccionada en la listbox
-    if not sel:
-        print("Select a flight.")
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before assigning gates.")
+        print("Warning: LEBL not loaded.")
         return
 
-    aircraft_sel = aircrafts[sel[0]] # Vuelo seleccionado
+    sel = listbox_merged.curselection()
+    if not sel:
+        messagebox.showwarning("Warning", "Select a flight.")
+        print("Warning: no flight selected.")
+        return
+
+    aircraft_sel = aircrafts[sel[0]]
     gate = AssignGate(bcn, aircraft_sel)
+
     print("Gate assigned:", gate)
 
 def assign_all_gates():
     global bcn
-
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before assigning gates.")
+        print("Warning: LEBL not loaded.")
+        return
     if bcn == -1:
         print("Load LEBL first.")
         return
@@ -289,14 +373,19 @@ def assign_all_gates():
             not_assigned += 1
         i = i + 1
 
-    print("Finished assigning all gates. Not assigned:",not_assigned)
+    print("Finished assigning all gates. Not assigned:", not_assigned)
 
 def unassign_gate():
     global bcn
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before freeing gates.")
+        print("Warning: LEBL not loaded.")
+        return
 
     sel = listbox_merged.curselection()
     if not sel:
-        print("Select a flight.")
+        messagebox.showwarning("Warning", "Select a flight.")
+        print("Warning: no flight selected.")
         return
 
     aircraft_sel = aircrafts[sel[0]]
@@ -307,8 +396,11 @@ def unassign_gate():
     else:
         print("Gate", gate, "freed from aircraft", aircraft_sel.id)
 
-
 def unassign_all_gates():
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before freeing gates.")
+        print("Warning: LEBL not loaded.")
+        return
     t = 0
     while t < len(bcn.terminals):
         a = 0
@@ -325,17 +417,22 @@ def unassign_all_gates():
 
 def assign_gate_text():
     global bcn
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before assigning gates.")
+        print("Warning: LEBL not loaded.")
+        return
 
     sel = listbox_merged.curselection()
     if not sel:
-        print("Select a flight.")
+        messagebox.showwarning("Warning", "Select a flight.")
+        print("Warning: no flight selected.")
         return
 
     aircraft_sel = aircrafts[sel[0]]
     gate_name = entry_gate.get().strip()
-
     if gate_name == "":
-        print("Enter a gate name.")
+        messagebox.showwarning("Warning", "Enter a gate.")
+        print("Warning: empty gate name.")
         return
 
     for terminal in bcn.terminals:
@@ -358,7 +455,10 @@ terminal_actual = 1
 def show_gate_occupancy():
     global bcn
     global terminal_actual
-
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before showing occupancy.")
+        print("Warning: LEBL not loaded.")
+        return
     notebook.select(1)
     fig.clf()
     ax = fig.add_subplot(111)
@@ -461,16 +561,26 @@ def show_gate_occupancy():
 
 def show_gate_occupancy_hour():
     global bcn, aircrafts
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before showing occupancy.")
+        print("Warning: LEBL not loaded.")
+        return
 
     hour = entry_hour.get()
     if hour == "":
+        messagebox.showwarning("Warning", "Enter an hour.")
+        print("Warning: empty hour.")
         return
 
     try:
         hour_int = int(hour)
         if hour_int < 0 or hour_int > 23:
+            messagebox.showwarning("Warning", "Hour must be between 0 and 23.")
+            print("Warning: hour out of range.")
             return
     except:
+        messagebox.showwarning("Warning", "Enter a valid hour.")
+        print("Warning: invalid hour.")
         return
 
     t = 0
@@ -497,18 +607,31 @@ def show_gate_occupancy_hour():
 
     show_gate_occupancy()
 
+
 def load_departures():
-    from tkinter import filedialog
     global departures
     filename = filedialog.askopenfilename()
-    if filename:
-        departures = LoadDepartures(filename)
-        listbox_departures.delete(0, END)
-        i = 0
-        while i < len(departures):
-            d = departures[i]
-            listbox_departures.insert(END, f"{d.id} | {d.destination} {d.departure} | {d.company}")
-            i = i + 1
+    if not filename:
+        return
+    try:
+        departures = aircraft.LoadDepartures(filename)
+    except:
+        messagebox.showwarning("Warning", "Could not load the departures file.")
+        print("Warning: error loading departures.")
+        return
+
+    listbox_departures.delete(0, END)
+
+    if len(departures) == 0:
+        messagebox.showwarning("Warning", "The departures file is empty.")
+        print("Warning: empty departures file.")
+        return
+
+    i = 0
+    while i < len(departures):
+        d = departures[i]
+        listbox_departures.insert(END, f"{d.id} | {d.destination} {d.departure} | {d.company}")
+        i = i + 1
 
 
 def merge_movements():
@@ -516,7 +639,8 @@ def merge_movements():
     global departures
 
     if len(aircrafts) == 0 or len(departures) == 0:
-        print("Load arrivals and departures first.")
+        messagebox.showwarning("Warning", "Load arrivals and departures before merging.")
+        print("Warning: missing arrivals or departures.")
         return
 
     aircrafts = MergeMovements(aircrafts, departures)
@@ -526,31 +650,19 @@ def merge_movements():
     i = 0
     while i < len(aircrafts):
         a = aircrafts[i]
-        listbox_merged.insert( END,  f"{a.id} | {a.origin} → {a.time} | {a.company} | DEP:{a.departure}")
+        listbox_merged.insert(END, f"{a.id} | {a.origin} | ARR:{a.time} | {a.company} | DEP:{a.departure}")
         i = i + 1
 
-
     print("Movements merged:", len(aircrafts))
-
-def assign_gates_at_time():
-    global bcn
-    hour = entry_hour.get()
-
-    if hour == "":
-        print("Enter hour (00-23).")
-        return
-
-    if bcn == -1:
-        print("Load LEBL first.")
-        return
-
-    not_assigned = AssignGatesAtTime(bcn, aircrafts, hour + ":00")
-    print("Not assigned:", not_assigned)
 
 
 def plot_day_occupancy():
     notebook.select(1)
     global bcn, aricrafts
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before showing daily occupancy.")
+        print("Warning: LEBL not loaded.")
+        return
     fig.clf()
     ax = fig.add_subplot(111)
     LEBL.ax = ax
@@ -561,21 +673,41 @@ def plot_day_occupancy():
 def assign_night_aircraft():
     global bcn, aircrafts
 
+    if bcn == -1:
+        messagebox.showwarning("Warning", "Load LEBL before assigning night aircraft.")
+        print("Warning: LEBL not loaded.")
+        return
+
     night_list = NightAircraft(aircrafts)
     if night_list == -1:
-        print("No night aircraft.")
+        messagebox.showwarning("Warning", "No night aircraft found.")
+        print("Warning: no night aircraft.")
         return
 
     AssignNightGates(bcn, night_list)
+
+def search_flights(event=None):
+    text = entry_search.get().lower()
+
+    listbox_merged.delete(0, END)
+
+    i = 0
+    while i < len(aircrafts):
+        a = aircrafts[i]
+        line = f"{a.id} {a.origin} {a.time} {a.company} {a.departure}".lower()
+        if text in line:
+            listbox_merged.insert(END, f"{a.id} | {a.origin} | ARR:{a.time} | {a.company} | DEP:{a.departure}")
+
+        i = i + 1
 
 # BACKGROUND MUSIC (WINSOUND)
 
 def play_selected_music():
 
     sel = listbox_music.curselection()
-
     if not sel:
-        print("Select a sound.")
+        messagebox.showwarning("Warning", "Select a sound first.")
+        print("Warning: no sound selected.")
         return
 
     sound_name = listbox_music.get(sel[0])
@@ -602,10 +734,11 @@ def play_selected_music():
 
         print("Playing:", sound_name)
 
-    except Exception as e:
 
-        print("Error playing sound:", e)
-        print("Check file path or WAV format")
+    except Exception as e:
+        messagebox.showwarning("Warning", "Error playing sound. Check file path or WAV format.")
+        print("Warning: error playing sound:", e)
+        print("Warning: check file path or WAV format.")
 
 
 def stop_music():
@@ -656,7 +789,7 @@ window.columnconfigure(6, weight=2)
 window.columnconfigure(7, weight=2)
 window.columnconfigure(8, weight=12)
 
-Label(window, text="AIRPORT MANAGER", font=("Segoe UI", 26, "bold"), bg="#E6E2D3", fg="#1B2A4A").grid(row=0, column=0, columnspan=9, pady=(20, 15), sticky=N+S+E+W)
+Label(window, text="AIRPORT MANAGER", font=("Segoe UI", 26, "bold"), bg="#E6E2D3", fg="#1B2A4A").grid(row=0, column=3, columnspan=5, pady=(20, 15), sticky=N+S+E+W)
 
 Label(window, text="AIRPORTS", font=("Segoe UI", 14, "bold"), bg="#E6E2D3", fg="#1B2A4A").grid(row=1, column=0, columnspan=2, sticky=W, padx=15)
 
@@ -731,9 +864,13 @@ entry_hour = Entry(window, bd=1, relief="solid", font=("Consolas", 10), width=8)
 entry_hour.grid(row=10, column=7, padx=(5, 15), sticky=W)
 
 Button(window, text="ASSIGN AND SHOW OCCUPANCY AT HOUR", bg="#4A5D6B", fg="white", font=("Segoe UI", 9, "bold"), bd=1, relief="groove", command=show_gate_occupancy_hour).grid(row=11, column=6, columnspan=2, padx=15, pady=5, sticky=N+S+E+W)
-Label(window, text="MERGED MOVEMENTS", font=("Segoe UI", 14, "bold"), bg="#E6E2D3", fg="#1B2A4A").grid(row=13, column=6, columnspan=2, sticky=W, padx=15)
+Label(window, text="MERGED MOVEMENTS", font=("Segoe UI", 14, "bold"), bg="#E6E2D3", fg="#1B2A4A").grid(row=12, column=6, columnspan=2, sticky=W, padx=15)
 listbox_merged = Listbox(window, font=("Consolas", 10), bg="#FAF8F5", fg="#2A2421", bd=1, relief="solid", width=48)
 listbox_merged.grid(row=14, column=6, columnspan=2, rowspan=2, padx=15, pady=5, sticky=N+S+E+W)
+Label(window, text="SEARCH:", bg="#E6E2D3", fg="#2A2421", font=("Segoe UI", 9, "bold")).grid(row=13, column=6, padx=(15, 5), sticky=E)
+entry_search = Entry(window, bd=1, relief="solid", font=("Consolas", 10), width=8)
+entry_search.grid(row=13, column=7,columnspan=1, padx=(5, 15), sticky=W)
+entry_search.bind("<KeyRelease>", search_flights)
 
 Label(window, text="BACKGROUND MUSIC", font=("Segoe UI", 11, "bold"), bg="#E6E2D3", fg="#1B2A4A").grid(row=13, column=4, columnspan=2, padx=15, pady=(10, 5), sticky=W)
 listbox_music = Listbox(window, font=("Consolas", 10), height=6, bg="#FAF8F5", relief="solid")

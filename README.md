@@ -42,5 +42,6 @@ Para asignar los aviones nocturnos simplemente darle al botón **NIGHT AIRCRAFTS
 Para asignar un avión a una puerta específica, hay que seleccionar el avión en **MERGED MOVEMENTS**, escribir la puerta en **GATE NAME:** y darle al botón **ASSIGN GATE TEXT**  
 Para poder asignar y ver el estado de cada hora del aeropuerto hay que escribir la hora en **HOUR(00-23):** y darle al botón **ASSIGN AND SHOW GATE OCCUPANCY AT HOUR**  
 Darle a **PLOT DAY OCCUPANCY** para ver la gráfica del estado del aeropuerto a lo largo del día.
+Usa el buscador para filtrar aerolíneas, vuelos o aeropuerto de salida.
 
 Video V4:  
