@@ -90,20 +90,12 @@ def MergeMovements(arrivals, departures):
         print("Error: empty list")
         return -1
 
-
-    arrivals_reales = []
-    m = 0
-    while m < len(arrivals):
-        if arrivals[m].time != "":
-            arrivals_reales.append(arrivals[m])
-        m = m + 1
-
     result = []
     used = []
 
     i = 0
-    while i < len(arrivals_reales):
-        arr = arrivals_reales[i]
+    while i < len(arrivals):
+        arr = arrivals[i]
 
         j = 0
         found = False
@@ -119,7 +111,7 @@ def MergeMovements(arrivals, departures):
                 dep_m = int(dep.departure.split(":")[1])
 
                 if (arr_h < dep_h) or (arr_h == dep_h and arr_m < dep_m):
-                    merged = Aircraft(arr.id, arr.origin, arr.time, arr.company, dep.destination, dep.departure)
+                    merged = Aircraft(arr.id, arr.origin,arr.time,arr.company, dep.destination,dep.departure)
                     result.append(merged)
                     used.append(j)
                     found = True

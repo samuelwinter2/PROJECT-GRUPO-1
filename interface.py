@@ -1,3 +1,4 @@
+#El usario debe introducir en dos cuadros de texto dos horas entre le 0 y el 23 y cuando pulse un boton el programa debe indicar el numero de vuelos que tienen prevista su salida del aeorpuerto en el perido de primera a la segunda hora
 from tkinter import *
 from tkinter import ttk, messagebox, filedialog
 import airport
@@ -448,7 +449,7 @@ def assign_gate_text():
                     return
 
     print("Gate not found:", gate_name)
-
+    messagebox.showwarning("Warning", "Gate not found")
 # Variable global para controlar qué terminal estamos mostrando (empieza en la T1)
 terminal_actual = 1
 
@@ -669,7 +670,6 @@ def plot_day_occupancy():
     PlotDayOccupancy(bcn, aircrafts)
     canvas.draw()
 
-
 def assign_night_aircraft():
     global bcn, aircrafts
 
@@ -770,6 +770,7 @@ def aplicar_hover_automatico(ventana):
             if color_original in colores_hover:
                 color_claro = colores_hover[color_original]
                 activar_color(widget, color_original, color_claro)
+
 
 window = Tk()
 window.geometry("1920x1080")

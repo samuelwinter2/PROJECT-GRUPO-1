@@ -181,13 +181,31 @@ def SearchTerminal(bcn, airline):
 # Asigna la primera puerta libre correcta a un avión. Parámetros: bcn, aircraft. Devuelve gate o -1.
 def AssignGate(bcn, aircraft):
 
+    i = 0
+    while i < len(bcn.terminals):
+        terminal = bcn.terminals[i]
+
+        j = 0
+        while j < len(terminal.boarding_areas):
+            area = terminal.boarding_areas[j]
+
+            k = 0
+            while k < len(area.gates):
+                gate = area.gates[k]
+
+                if gate.aircraft_id == aircraft.id:
+                    return gate.name
+
+                k = k + 1
+            j = j + 1
+        i = i + 1
+
     t_name = SearchTerminal(bcn, aircraft.company)
     if t_name == "":
-        print("ERROR: Airline", aircraft.company," not found in any terminal")
+        print("ERROR: Airline", aircraft.company, "not found in any terminal")
         return -1
 
     es_Schengen = IsSchengenAirport(aircraft.origin)
-
     if es_Schengen:
         tipo = "schengen"
     else:
@@ -226,7 +244,6 @@ def AssignGate(bcn, aircraft):
 
     print("ERROR: Terminal not found")
     return -1
-
 # AssignNightGates: asigna puertas a aviones que solo tienen salida; parámetros(bcn, aircrafts); devuelve -1 si error.
 def AssignNightGates(bcn, aircrafts):
     if len(aircrafts) == 0:
