@@ -353,7 +353,22 @@ def assign_gate():
 
     aircraft_sel = aircrafts[sel[0]]
     gate = AssignGate(bcn, aircraft_sel)
+    if gate == -1:
 
+        if SearchTerminal(bcn, aircraft_sel.company) == "":
+            messagebox.showwarning("Warning",f"Airline '{aircraft_sel.company}' not found in any terminal.")
+            print("ERROR: Airline not found in any terminal")
+            return
+
+        es_Schengen = IsSchengenAirport(aircraft_sel.origin)
+        tipo = "schengen" if es_Schengen else "non-schengen"
+        t_name = SearchTerminal(bcn, aircraft_sel.company)
+
+        messagebox.showwarning("Warning",f"No free gates in terminal {t_name} for type {tipo}.")
+        print(f"ERROR: No free gates in terminal {t_name} for type {tipo}")
+        return
+
+    messagebox.showinfo("Gate Assigned",f"Gate assigned: {gate}")
     print("Gate assigned:", gate)
 
 def assign_all_gates():
