@@ -44,4 +44,4 @@ Para poder asignar y ver el estado de cada hora del aeropuerto hay que escribir 
 Darle a **PLOT DAY OCCUPANCY** para ver la gráfica del estado del aeropuerto a lo largo del día.
 Usa el buscador para filtrar aerolíneas, vuelos o aeropuerto de salida.
 
-Video V4:  
+Video V4:  https://drive.google.com/file/d/1lOOhoAe8IYleNBXWRa33x-aRUDSNIeSP/view?usp=sharing
